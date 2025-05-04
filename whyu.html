@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Gauge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        cold: '#3B82F6',
+                        cool: '#06B6D4',
+                        warm: '#F97316', 
+                        hot: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6">
+            <h1 class="text-xl md:text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">Tampilan Suhu</h1>
+            
+            <div class="flex flex-col items-center justify-center">
+                <!-- Temperature Display -->
+                <div class="relative w-64 h-64 mb-6">
+                    <!-- Gauge Background -->
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <!-- Cold section - Blue -->
+                        <path d="M50 10 A40 40 0 0 1 90 50" fill="none" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" />
+                        <!-- Cool section - Light Blue -->
+                        <path d="M90 50 A40 40 0 0 1 50 90" fill="none" stroke="#06B6D4" stroke-width="8" stroke-linecap="round" />
+                        <!-- Warm section - Orange -->
+                        <path d="M50 90 A40 40 0 0 1 10 50" fill="none" stroke="#F97316" stroke-width="8" stroke-linecap="round" />
+                        <!-- Hot section - Red -->
+                        <path d="M10 50 A40 40 0 0 1 50 10" fill="none" stroke="#EF4444" stroke-width="8" stroke-linecap="round" />
+                        
+                        <!-- Current Temperature indicator -->
+                        <circle id="tempIndicator" cx="50" cy="10" r="5" fill="#000000" class="dark:fill-white" />
+                        
+                        <!-- Temperature markings -->
+                        <text x="50" y="20" text-anchor="middle" font-size="4" class="fill-black dark:fill-white">0°</text>
+                        <text x="85" y="52" text-anchor="middle" font-size="4" class="fill-black dark:fill-white">10°</text>
+                        <text x="50" y="85" text-anchor="middle" font-size="4" class="fill-black dark:fill-white">20°</text>
+                        <text x="15" y="52" text-anchor="middle" font-size="4" class="fill-black dark:fill-white">30°</text>
+                    </svg>
+                    
+                    <!-- Center Temperature Display -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-center">
+                            <span id="tempValue" class="text-4xl font-bold text-gray-800 dark:text-white">25</span>
+                            <span id="tempUnit" class="text-2xl font-bold text-gray-800 dark:text-white">°C</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="w-full max-w-xs">
+                    <div class="flex items-center justify-between mb-4">
+                        <label for="tempSlider" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Atur Suhu</label>
+                        <div>
+                            <button id="celsiusBtn" class="px-2 py-1 text-sm font-medium rounded-l-md bg-primary text-white">°C</button>
+                            <button id="fahrenheitBtn" class="px-2 py-1 text-sm font-medium rounded-r-md bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">°F</button>
+                        </div>
+                    </div>
+                    <input id="tempSlider" type="range" min="-20" max="40" value="25" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        <span>-20°</span>
+                        <span>0°</span>
+                        <span>20°</span>
+                        <span>40°</span>
+                    </div>
+                </div>
+                
+                <!-- Additional Info -->
+                <div class="mt-6 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg w-full max-w-xs">
+                    <h3 class="font-medium text-gray-800 dark:text-white mb-2">Deskripsi Suhu</h3>
+                    <p id="tempDescription" class="text-sm text-gray-600 dark:text-gray-300">Suhu saat ini termasuk kategori normal.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM elements
+        const tempSlider = document.getElementById('tempSlider');
+        const tempValue = document.getElementById('tempValue');
+        const tempUnit = document.getElementById('tempUnit');
+        const tempIndicator = document.getElementById('tempIndicator');
+        const tempDescription = document.getElementById('tempDescription');
+        const celsiusBtn = document.getElementById('celsiusBtn');
+        const fahrenheitBtn = document.getElementById('fahrenheitBtn');
+
+        // State
+        let isCelsius = true;
+        let currentTemp = 25;
+
+        // Functions
+        function updateTemperatureDisplay() {
+            const displayTemp = isCelsius ? currentTemp : (currentTemp * 9/5) + 32;
+            tempValue.textContent = Math.round(displayTemp);
+            tempUnit.textContent = isCelsius ? '°C' : '°F';
+            
+            // Position indicator on gauge
+            const angle = ((currentTemp + 20) / 60) * 360; // Map -20 to 40 range to 0-360 degrees
+            const angleRad = (angle - 90) * (Math.PI / 180); // -90 to start at the top
+            const cx = 50 + 40 * Math.cos(angleRad);
+            const cy = 50 + 40 * Math.sin(angleRad);
+            tempIndicator.setAttribute('cx', cx);
+            tempIndicator.setAttribute('cy', cy);
+            
+            // Update description
+            if (currentTemp < 0) {
+                tempDescription.textContent = "Suhu sangat dingin, berhati-hatilah!";
+            } else if (currentTemp < 10) {
+                tempDescription.textContent = "Suhu dingin, pakailah pakaian hangat.";
+            } else if (currentTemp < 20) {
+                tempDescription.textContent = "Suhu sejuk, nyaman untuk aktivitas.";
+            } else if (currentTemp < 30) {
+                tempDescription.textContent = "Suhu normal, ideal untuk berbagai kegiatan.";
+            } else {
+                tempDescription.textContent = "Suhu panas, jagalah hidrasi dengan baik.";
+            }
+        }
+
+        function setTemperature(temp) {
+            currentTemp = Number(temp);
+            tempSlider.value = currentTemp;
+            updateTemperatureDisplay();
+        }
+
+        // Event listeners
+        tempSlider.addEventListener('input', (e) => {
+            setTemperature(e.target.value);
+        });
+
+        celsiusBtn.addEventListener('click', () => {
+            if (!isCelsius) {
+                isCelsius = true;
+                celsiusBtn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+                celsiusBtn.classList.add('bg-primary', 'text-white');
+                fahrenheitBtn.classList.remove('bg-primary', 'text-white');
+                fahrenheitBtn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+                updateTemperatureDisplay();
+            }
+        });
+
+        fahrenheitBtn.addEventListener('click', () => {
+            if (isCelsius) {
+                isCelsius = false;
+                fahrenheitBtn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+                fahrenheitBtn.classList.add('bg-primary', 'text-white');
+                celsiusBtn.classList.remove('bg-primary', 'text-white');
+                celsiusBtn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-300');
+                updateTemperatureDisplay();
+            }
+        });
+
+        // Initialize
+        updateTemperatureDisplay();
+        function sendToUbidots(temp) {
+    fetch('https://industrial.api.ubidots.com/api/v1.6/devices/iot-project/', {
+        method: 'POST',
+        headers: {
+            'X-Auth-Token': 'YOUR_UBIDOTS_TOKEN',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            temperature: temp
+        })
+    })
+    .then(response => response.json())
+    .then(data => console.log('Data sent to Ubidots:', data))
+    .catch(error => console.error('Error sending to Ubidots:', error));
+}
+
+function setTemperature(temp) {
+    currentTemp = Number(temp);
+    tempSlider.value = currentTemp;
+    updateTemperatureDisplay();
+    sendToUbidots(currentTemp); // ← Kirim ke Ubidots setiap kali suhu berubah
+}
+    </script>
+</body>
+</html>
